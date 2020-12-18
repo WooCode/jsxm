@@ -505,6 +505,29 @@ exports['test E5x finetune override'] = function(assert) {
   assert.equal(f2.toFixed(2), "131.00", "E5f finetune +127");
 };
 
+exports['test E7x set tremolo waveform'] = function(assert) {
+  var xm = testdata.resetXMData();
+  xm.patterns = [
+    [
+      [[48, 1, -1,  0, 0x00]], // C-4  1 -- ---  (default waveform - sine)
+      [[48, 1, -1, 14, 0x71]], // C-4  1 -- E71  (saw, ramp-down)
+      [[48, 1, -1, 14, 0x72]], // C-4  1 -- E72  (square)
+      [[48, 1, -1, 14, 0x73]]  // C-4  1 -- E73  (random)
+    ]
+  ];
+  xm.tempo = 1;
+  var ch = xm.channelinfo[0];
+  XMPlayer.nextTick();
+  assert.equal(ch.tremolotype, 0, 'row 0 tick 0 tremolotype=0');
+  XMPlayer.nextTick();
+  assert.equal(ch.tremolotype, 1, 'row 1 tick 0 tremolotype=1');
+  XMPlayer.nextTick();
+  assert.equal(ch.tremolotype, 2, 'row 2 tick 0 tremolotype=2');
+  XMPlayer.nextTick();
+  assert.equal(ch.tremolotype, 3, 'row 3 tick 0 tremolotype=3');
+};
+
+
 exports['test E60 loop twice with set beginning'] = function(assert) {
   var xm = testdata.resetXMData(2);
 

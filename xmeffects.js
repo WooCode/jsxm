@@ -106,6 +106,50 @@ function eff_t1_6(ch) {  // vibrato + volume slide
   eff_t1_4(ch);
 }
 
+function eff_t0_7(ch, data) {  // tremolo
+  if (data & 0x0f) {
+    ch.tremolodepth = (data & 0x0f) * 2;
+  }
+  if (data >> 4) {
+    ch.tremolospeed = data >> 4;
+  }
+  eff_t1_7(ch);
+}
+
+function eff_t1_7(ch) {  // tremolo
+  ch.voloffset =
+    getTremoloDelta(ch.tremolotype, ch.tremolopos) * ch.tremolodepth;
+  if (isNaN(ch.voloffset)) {
+    console.log("tremolo voloffset NaN?",
+        ch.tremolopos, ch.tremolospeed, ch.tremolodepth);
+    ch.voloffset = 0;
+  }
+  // only updates on non-first ticks
+  if (player.cur_tick > 0) {
+    ch.tremolopos += ch.tremolospeed;
+    ch.tremolopos &= 63;
+  }
+}
+
+function getTremoloDelta(type, x) {
+  var delta = 0;
+  switch (type & 0x03) {
+    case 1: // sawtooth (ramp-down)
+      delta = ((1 + x * 2 / 64) % 2) - 1;
+      break;
+    case 2: // square
+    case 3: // random (in FT2 these two are the same)
+      delta = x < 32 ? 1 : -1;
+      break;
+    case 0:
+    default: // sine
+      delta = Math.sin(x * Math.PI / 32);
+      break;
+  }
+  return delta;
+}
+
+
 function eff_t0_8(ch, data) {  // set panning
   ch.pan = data;
 }
@@ -178,6 +222,9 @@ function eff_t0_e(ch, data) {  // extended effects!
           delete ch.loopstart
         }
       }
+      break;
+    case 7:  // set tremolo waveform
+      ch.tremolotype = data & 0x07;
       break;
     case 8:  // panning
       ch.pan = data * 0x11;

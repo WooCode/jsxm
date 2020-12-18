@@ -28,6 +28,7 @@ exports.resetXMData = function(channels) {
       vibratodepth: 1,
       vibratospeed: 1,
       vibratotype: 0,
+      tremolotype: 0,
     });
   }
   xm.songpats = [0];
