@@ -1,6 +1,5 @@
 import "./shell";
 import "./trackview";
-import "./xm";
 import "./xmeffects";
 
 import XMPlayer from "./models/XMPlayer"
@@ -13,5 +12,9 @@ declare global {
         // Audio constructors
         webkitAudioContext: any;
         AudioContext: any;
+
+        // Sketch file loading via js
+        xmuris: any;
+        baseuri: any;
      }
 }

@@ -1,47 +1,49 @@
+import Prettify from "./models/Prettify";
+import XMPlayer from "./models/XMPlayer";
 
-const player = window.XMPlayer;
+// const player = window.XMPlayer;
 
-function eff_t1_0(ch) {  // arpeggio
+function eff_t1_0(player: XMPlayer, ch) {  // arpeggio
   if (ch.effectdata !== 0 && ch.inst !== undefined) {
-    var arpeggio = [0, ch.effectdata>>4, ch.effectdata&15];
+    var arpeggio = [0, ch.effectdata >> 4, ch.effectdata & 15];
     var note = ch.note + arpeggio[player.cur_tick % 3];
     ch.period = player.periodForNote(ch, note);
   }
 }
 
-function eff_t0_1(ch, data) {  // pitch slide up
+function eff_t0_1(player: XMPlayer,ch, data) {  // pitch slide up
   if (data !== 0) {
     ch.slideupspeed = data;
   }
 }
 
-function eff_t1_1(ch) {  // pitch slide up
+function eff_t1_1(player: XMPlayer,ch) {  // pitch slide up
   if (ch.slideupspeed !== undefined) {
     // is this limited? it appears not
     ch.period -= ch.slideupspeed;
   }
 }
 
-function eff_t0_2(ch, data) {  // pitch slide down
+function eff_t0_2(player: XMPlayer,ch, data) {  // pitch slide down
   if (data !== 0) {
     ch.slidedownspeed = data;
   }
 }
 
-function eff_t1_2(ch) {  // pitch slide down
+function eff_t1_2(player: XMPlayer,ch) {  // pitch slide down
   if (ch.slidedownspeed !== undefined) {
     // 1728 is the period for C-1
     ch.period = Math.min(1728, ch.period + ch.slidedownspeed);
   }
 }
 
-function eff_t0_3(ch, data) {  // portamento
+function eff_t0_3(player: XMPlayer,ch, data) {  // portamento
   if (data !== 0) {
     ch.portaspeed = data;
   }
 }
 
-function eff_t1_3(ch) {  // portamento
+function eff_t1_3(player: XMPlayer,ch) {  // portamento
   if (ch.periodtarget !== undefined && ch.portaspeed !== undefined) {
     if (ch.period > ch.periodtarget) {
       ch.period = Math.max(ch.periodtarget, ch.period - ch.portaspeed);
@@ -51,21 +53,21 @@ function eff_t1_3(ch) {  // portamento
   }
 }
 
-function eff_t0_4(ch, data) {  // vibrato
+function eff_t0_4(player: XMPlayer,ch, data) {  // vibrato
   if (data & 0x0f) {
     ch.vibratodepth = (data & 0x0f) * 2;
   }
   if (data >> 4) {
     ch.vibratospeed = data >> 4;
   }
-  eff_t1_4(ch);
+  eff_t1_4(player, ch);
 }
 
-function eff_t1_4(ch) {  // vibrato
-  ch.periodoffset = getVibratoDelta(ch.vibratotype, ch.vibratopos) * ch.vibratodepth;
+function eff_t1_4(player: XMPlayer,ch) {  // vibrato
+  ch.periodoffset = getVibratoDelta(player, ch.vibratotype, ch.vibratopos) * ch.vibratodepth;
   if (isNaN(ch.periodoffset)) {
     console.log("vibrato periodoffset NaN?",
-        ch.vibratopos, ch.vibratospeed, ch.vibratodepth);
+      ch.vibratopos, ch.vibratospeed, ch.vibratodepth);
     ch.periodoffset = 0;
   }
   // only updates on non-first ticks
@@ -75,7 +77,7 @@ function eff_t1_4(ch) {  // vibrato
   }
 }
 
-function getVibratoDelta(type, x) {
+function getVibratoDelta(player: XMPlayer,type, x) {
   var delta = 0;
   switch (type & 0x03) {
     case 1: // sawtooth (ramp-down)
@@ -93,37 +95,37 @@ function getVibratoDelta(type, x) {
   return delta;
 }
 
-function eff_t1_5(ch) {  // portamento + volume slide
-  eff_t1_a(ch);
-  eff_t1_3(ch);
+function eff_t1_5(player: XMPlayer, ch) {  // portamento + volume slide
+  eff_t1_a(player, ch);
+  eff_t1_3(player,ch);
 }
 
-function eff_t1_6(ch) {  // vibrato + volume slide
-  eff_t1_a(ch);
-  eff_t1_4(ch);
+function eff_t1_6(player: XMPlayer,ch) {  // vibrato + volume slide
+  eff_t1_a(player,ch);
+  eff_t1_4(player,ch);
 }
 
-function eff_t0_8(ch, data) {  // set panning
+function eff_t0_8(player: XMPlayer,ch, data) {  // set panning
   ch.pan = data;
 }
 
-function eff_t0_9(ch, data) {  // sample offset
+function eff_t0_9(player: XMPlayer,ch, data) {  // sample offset
   ch.off = data * 256;
 }
 
-function eff_t0_a(ch, data) {  // volume slide
+function eff_t0_a(player: XMPlayer,ch, data) {  // volume slide
   if (data) {
     ch.volumeslide = -(data & 0x0f) + (data >> 4);
   }
 }
 
-function eff_t1_a(ch) {  // volume slide
+function eff_t1_a(player: XMPlayer,ch) {  // volume slide
   if (ch.volumeslide !== undefined) {
     ch.vol = Math.max(0, Math.min(64, ch.vol + ch.volumeslide));
   }
 }
 
-function eff_t0_b(ch, data) {  // song jump
+function eff_t0_b(player: XMPlayer,ch, data) {  // song jump
   if (data < player.xm.songpats.length) {
     player.cur_songpos = data - 1;
     player.cur_pat = -1;
@@ -131,11 +133,11 @@ function eff_t0_b(ch, data) {  // song jump
   }
 }
 
-function eff_t0_c(ch, data) {  // set volume
+function eff_t0_c(player: XMPlayer,ch, data) {  // set volume
   ch.vol = Math.min(64, data);
 }
 
-function eff_t0_d(ch, data) {  // pattern jump
+function eff_t0_d(player: XMPlayer,ch, data) {  // pattern jump
   player.cur_songpos++;
   if (player.cur_songpos >= player.xm.songpats.length)
     player.cur_songpos = player.xm.song_looppos;
@@ -143,7 +145,7 @@ function eff_t0_d(ch, data) {  // pattern jump
   player.next_row = (data >> 4) * 10 + (data & 0x0f);
 }
 
-function eff_t0_e(ch, data) {  // extended effects!
+function eff_t0_e(player: XMPlayer,ch, data) {  // extended effects!
   var eff = data >> 4;
   data = data & 0x0f;
   switch (eff) {
@@ -157,7 +159,7 @@ function eff_t0_e(ch, data) {  // extended effects!
       ch.vibratotype = data & 0x07;
       break;
     case 5:  // finetune
-      ch.fine = (data<<4) + data - 128;
+      ch.fine = (data << 4) + data - 128;
       break;
     case 6:  // pattern loop
       if (data == 0) {
@@ -167,7 +169,7 @@ function eff_t0_e(ch, data) {  // extended effects!
           ch.loopend = player.cur_row
           ch.loopremaining = data
         }
-        if(ch.loopremaining !== 0) {
+        if (ch.loopremaining !== 0) {
           ch.loopremaining--
           player.next_row = ch.loopstart || 0
         } else {
@@ -199,7 +201,7 @@ function eff_t0_e(ch, data) {  // extended effects!
   }
 }
 
-function eff_t1_e(ch) {  // note cut
+function eff_t1_e(player: XMPlayer,ch) {  // note cut
   switch (ch.effectdata >> 4) {
     case 0x0c:
       if (player.cur_tick == (ch.effectdata & 0x0f)) {
@@ -209,7 +211,7 @@ function eff_t1_e(ch) {  // note cut
   }
 }
 
-function eff_t0_f(ch, data) {  // set tempo
+function eff_t0_f(player: XMPlayer,ch, data) {  // set tempo
   if (data === 0) {
     console.log("tempo 0?");
     return;
@@ -220,7 +222,7 @@ function eff_t0_f(ch, data) {  // set tempo
   }
 }
 
-function eff_t0_g(ch, data) {  // set global volume
+function eff_t0_g(player: XMPlayer,ch, data) {  // set global volume
   if (data <= 0x40) {
     // volume gets multiplied by 2 to match
     // the initial max global volume of 128
@@ -230,21 +232,21 @@ function eff_t0_g(ch, data) {  // set global volume
   }
 }
 
-function eff_t0_h(ch, data) {  // global volume slide
+function eff_t0_h(player: XMPlayer,ch, data) {  // global volume slide
   if (data) {
     // same as Axy but multiplied by 2
     player.xm.global_volumeslide = (-(data & 0x0f) + (data >> 4)) * 2;
   }
 }
 
-function eff_t1_h(ch) {  // global volume slide
+function eff_t1_h(player: XMPlayer,ch) {  // global volume slide
   if (player.xm.global_volumeslide !== undefined) {
     player.xm.global_volume = Math.max(0, Math.min(player.max_global_volume,
       player.xm.global_volume + player.xm.global_volumeslide));
   }
 }
 
-function eff_t0_r(ch, data) {  // retrigger
+function eff_t0_r(player: XMPlayer,ch, data) {  // retrigger
   if (data & 0x0f) ch.retrig = (ch.retrig & 0xf0) + (data & 0x0f);
   if (data & 0xf0) ch.retrig = (ch.retrig & 0x0f) + (data & 0xf0);
 
@@ -268,18 +270,18 @@ function eff_t0_r(ch, data) {  // retrigger
   ch.vol = Math.min(64, Math.max(0, ch.vol));
 }
 
-function eff_t1_r(ch) {
+function eff_t1_r(player: XMPlayer,ch) {
   if (player.cur_tick % (ch.retrig & 0x0f) === 0) {
     ch.off = 0;
   }
 }
 
-function eff_unimplemented() {}
+function eff_unimplemented() { }
 function eff_unimplemented_t0(ch, data) {
-  console.log("unimplemented effect", player.prettify_effect(ch.effect, data));
+  console.log("unimplemented effect", Prettify.prettify_effect(ch.effect, data));
 }
 
-player.effects_t0 = [  // effect functions on tick 0
+const effects_t0 = [  // effect functions on tick 0
   eff_t1_0,  // 1, arpeggio is processed on all ticks
   eff_t0_1,
   eff_t0_2,
@@ -318,7 +320,7 @@ player.effects_t0 = [  // effect functions on tick 0
   eff_unimplemented_t0,  // z
 ];
 
-player.effects_t1 = [  // effect functions on tick 1+
+const effects_t1 = [  // effect functions on tick 1+
   eff_t1_0,
   eff_t1_1,
   eff_t1_2,
@@ -356,4 +358,6 @@ player.effects_t1 = [  // effect functions on tick 1+
   eff_unimplemented,  // y
   eff_unimplemented   // z
 ];
- 
+
+
+export default { effects_t0, effects_t1 };
